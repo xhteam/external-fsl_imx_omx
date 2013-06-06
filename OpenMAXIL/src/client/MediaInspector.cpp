@@ -227,6 +227,8 @@ err:
 OMX_ERRORTYPE TryFlacType(CONTENTDATA *pData, CPbyte *buffer)
 {
     OMX_ERRORTYPE ret = OMX_ErrorNone;
+    CPbyte buffer2[DETECT_BUFFER_SIZE];
+    OMX_S32 Id3Size = 0;
 
     LOG_DEBUG("TryFlacType\n");
 
@@ -234,9 +236,50 @@ OMX_ERRORTYPE TryFlacType(CONTENTDATA *pData, CPbyte *buffer)
     if (buffer[0] == 'f' && buffer[1] == 'L' && buffer[2] == 'a' && buffer[3] == 'C') {
         pData->type = TYPE_FLAC;
         LOG_DEBUG("Content type is flac.\n");
+        return ret;
     }
     else
         ret = OMX_ErrorUndefined;
+
+    if (!fsl_osal_memcmp((const fsl_osal_ptr)("ID3"), (const fsl_osal_ptr)buffer, 3)) {
+            // Skip the ID3v2 header.
+            size_t len =
+                ((buffer[6] & 0x7f) << 21)
+                | ((buffer[7] & 0x7f) << 14)
+                | ((buffer[8] & 0x7f) << 7)
+                | (buffer[9] & 0x7f);
+
+            if (len > 3 * 1024 * 1024)
+                len = 3 * 1024 * 1024;
+
+            len += 10;
+
+            Id3Size = len;
+    }
+    else{
+        return OMX_ErrorUndefined;
+    }
+
+    LOG_DEBUG("TryFlacType,Id3Size=%d",Id3Size);
+    if(0 != pData->hPipe->Open(&(pData->hContent), pData->sContentURI, CP_AccessRead)) {
+        LOG_ERROR("Can't open content: %s\n", (char*)(pData->sContentURI));
+        return OMX_ErrorUndefined;
+    }
+
+    pData->hPipe->SetPosition(pData->hContent, Id3Size, CP_OriginBegin);
+
+    fsl_osal_memset(buffer2, 0, DETECT_BUFFER_SIZE);
+    ReadContent(pData, buffer2, DETECT_BUFFER_SIZE);
+
+    pData->hPipe->Close(pData->hContent);
+
+    //LOG_DEBUG("TryFlacType,buffer2= %x %x %x %x",buffer2[0],buffer2[1],buffer2[2],buffer2[3]);
+
+    if (buffer2[0] == 'f' && buffer2[1] == 'L' && buffer2[2] == 'a' && buffer2[3] == 'C') {
+        pData->type = TYPE_FLAC;
+        LOG_DEBUG("Content type is flac.\n");
+        ret = OMX_ErrorNone;
+    }
 
     return ret;
 }
@@ -522,6 +565,24 @@ OMX_ERRORTYPE TryOggType(CONTENTDATA *pData, CPbyte *buffer)
     return ret;
 }
 
+OMX_ERRORTYPE TryAmrType(CONTENTDATA *pData, CPbyte *buffer)
+{
+    OMX_ERRORTYPE ret = OMX_ErrorNone;
+
+    LOG_DEBUG("TryAmrType\n");
+
+    pData->type = TYPE_NONE;
+    if ( !fsl_osal_memcmp((const fsl_osal_ptr)buffer, (const fsl_osal_ptr)"#!AMR\n", 6) ||
+        !fsl_osal_memcmp((const fsl_osal_ptr)buffer, (const fsl_osal_ptr)"#!AMR-WB\n", 9)){
+        pData->type = TYPE_AMR;
+        LOG_DEBUG("Content type is amr.\n");
+    }
+    else
+        ret = OMX_ErrorUndefined;
+
+    return ret;
+}
+
 
 OMX_ERRORTYPE GetContentPipe(CONTENTDATA *pData)
 {
@@ -559,6 +620,7 @@ static TRYTYPEFUNC TryFunc[] = {
     TryFlacType,
     TryWavType,
     TryHttpliveType,
+    TryAmrType,
     TryMpg2type,
     TryMp3Type,
     TryAacType,
@@ -625,6 +687,7 @@ static TYPECONFIRM TypeConfirm[] = {
     {"parser.flac", TryFlacType},
     {"parser.wav", TryWavType},
     {"parser.httplive", TryHttpliveType},
+    {"parser.amr",TryAmrType},
     {"parser.mpg2", TryMpg2type},
     {"parser.mp3", TryMp3Type},
     {"parser.aac", TryAacType},

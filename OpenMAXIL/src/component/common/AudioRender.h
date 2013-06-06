@@ -73,6 +73,9 @@ class AudioRender : public ComponentBase {
 		virtual OMX_ERRORTYPE DeviceDelay(OMX_U32 *nDelayLen) = 0;
         virtual OMX_ERRORTYPE WriteDevice(OMX_U8 *pBuffer, OMX_U32 nActuralLen) = 0;
 
+		virtual OMX_ERRORTYPE AudioRenderDoExec2Pause();
+		virtual OMX_ERRORTYPE AudioRenderDoPause2Exec();
+
 		RingBuffer AudioRenderRingBuffer;
 		FadeInFadeOut AudioRenderFadeInFadeOut;
 		OMX_AUDIO_CONFIG_VOLUMETYPE Volume;

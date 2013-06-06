@@ -301,7 +301,7 @@ TSM_TIMESTAMP tsmGetFrmTs(void* pHandle,void* pfrmHandle)
 		else{
 			tsOri = TSManagerSend(pObj->pHandleOri);
 			TS_API("ori: calling TSManagerSend: returned ts(ns): %lld, total: %d \n",tsOri, (int)pObj->nInTsCntOri);
-			tsOri=tsOri/TS_SCALE;
+			tsOri=(tsOri==TS_INVALIDTS)?tsOri:(tsOri/TS_SCALE);
 			pObj->nInTsCntOri--;
 		}
 		ts=tsOri;
@@ -327,7 +327,7 @@ TSM_TIMESTAMP tsmGetFrmTs(void* pHandle,void* pfrmHandle)
 					ts2=TSManagerSend2(pObj->pHandle2, pfrmHandle);
 					TS_API("new: calling TSManagerSend2: frm: 0x%X, returned ts(ns): %lld, total: %d \n",pfrmHandle,ts2, (int)pObj->nInTsCnt2);
 				}
-				ts2=ts2/TS_SCALE;
+				ts2=(ts2==TS_INVALIDTS)?ts2:(ts2/TS_SCALE);
 				pObj->nInTsCnt2--;
 			}
 			//TS_DEBUG("new: get one ts: %lld, total: %d\n", ts2, (int)pObj->nInTsCnt2);
@@ -440,7 +440,7 @@ TSM_TIMESTAMP tsmQueryCurrTs(void* pHandle)
 				pObj->nInCurTsOri=TS_INVALIDTS+1;
 			}
 			else{
-				tsOri=tsOri/TS_SCALE;
+				tsOri=(tsOri==TS_INVALIDTS)?tsOri:(tsOri/TS_SCALE);
 				pObj->nInCurTsOri = tsOri;
 			}
 			pObj->nInTsCntOri--;
@@ -477,7 +477,7 @@ TSM_TIMESTAMP tsmQueryCurrTs(void* pHandle)
 				pObj->nInCurTs2=TS_INVALIDTS+1;
 			}
 			else{
-				ts2=ts2/TS_SCALE;
+				ts2=(ts2==TS_INVALIDTS)?ts2:(ts2/TS_SCALE);
 				pObj->nInCurTs2 = ts2;
 			}
 			pObj->nInTsCnt2--;

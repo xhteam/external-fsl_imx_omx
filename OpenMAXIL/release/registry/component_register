@@ -422,6 +422,14 @@ $
 component_name=OMX.Freescale.std.parser.fsl.sw-based;
 library_path=lib_omx_fsl_parser_v2_arm11_elinux.so;
 component_entry_function=FslParserInit;
+component_role=parser.amr;
+role_priority=3;
+$
+
+@
+component_name=OMX.Freescale.std.parser.fsl.sw-based;
+library_path=lib_omx_fsl_parser_v2_arm11_elinux.so;
+component_entry_function=FslParserInit;
 component_role=parser.rmvb;
 role_priority=3;
 $

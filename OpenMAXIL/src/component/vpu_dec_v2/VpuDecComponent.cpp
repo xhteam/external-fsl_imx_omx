@@ -1001,7 +1001,7 @@ OMX_COLOR_FORMATTYPE ConvertMjpgColorFormat(OMX_S32 sourceFormat,OMX_COLOR_FORMA
 #endif			
 		default:	//unknow
 			VPU_COMP_ERR_LOG("unknown mjpg color format: %d \r\n",(INT32)sourceFormat);
-			colorformat=OMX_COLOR_FormatYUV420Planar;
+			colorformat=OMX_COLOR_FormatUnused;
 			break;			
 	}	
 	return colorformat;

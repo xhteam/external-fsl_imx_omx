@@ -1076,6 +1076,8 @@ int32 FslParser::CreateParserInterface()
         strcpy(version, ".3.0");
     if(!strncmp(role, "parser.ogg", strlen("parser.ogg")))
         strcpy(version, ".3.0");
+    if(!strncmp(role, "parser.amr", strlen("parser.amr")))
+        strcpy(version, ".3.0");
 
 
     LOG_DEBUG("Platform:\t");
@@ -1131,6 +1133,8 @@ int32 FslParser::CreateParserInterface()
 
     else if(!strncmp(role, "parser.ogg", strlen("parser.ogg")))
        strcat(parserLibName, "ogg");
+    else if(!strncmp(role, "parser.amr", strlen("parser.amr")))
+       strcat(parserLibName, "amr");
 
     else  
     {
@@ -1605,7 +1609,7 @@ OMX_ERRORTYPE FslParser::GetOneSample(MediaBuf **pBuf, uint32 *data_size, uint32
     void * buffer_context = NULL;
     OMX_TICKS ts;
     uint64 endTime;
-    uint8 *tmp;
+    uint8 *tmp = NULL;
     uint32 sampleFlag;
     uint32 track_num_got = track_num;
 
@@ -1665,32 +1669,37 @@ OMX_ERRORTYPE FslParser::GetOneSample(MediaBuf **pBuf, uint32 *data_size, uint32
     }
     fsl_osal_mutex_unlock(sParserMutex); 
 
-
-    *pBuf = (MediaBuf *)buffer_context;
-    if (!buffer_context || PARSER_SUCCESS != err)
-    {
-        uint32 tmp = 16;        
-        GetEmptyBufFromList((uint32)track_num_got,&tmp, (void **)pBuf);
-        if (!*pBuf)
-            return OMX_ErrorInsufficientResources;
-
-    }
-
     if(PARSER_SUCCESS != err)
     {
-        /*some clips will not send correct track number when reach EOS of clip*/
-        if (read_mode == PARSER_READ_MODE_FILE_BASED)
-            track_num_got = track_num;
+        uint32 tmpSize = 16;
+        GetEmptyBufFromList((uint32)track_num,&tmpSize, (void **)pBuf);
+        if (!*pBuf) {
+            LOG_ERROR("Shouldn't be here!!!\n");
+            return OMX_ErrorInsufficientResources;
+        }
 
         (*pBuf)->buf.nFlags |= OMX_BUFFERFLAG_EOS;
         (*pBuf)->buf.nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
         *data_size = 0;
-        AddBufferToReadyList(track_num_got, (void*)(*pBuf));
+        AddBufferToReadyList(track_num, (void*)(*pBuf));
 
         return OMX_ErrorNoMore;
     }
 
-    /*MPEG2 parser will return zero length buffer, with valid flag that can't be ignored.*/
+    if(tmp == NULL) {
+        /*MPG, MP4 parser sometimes will return PARSER_SUCCESS without a valid buffer*/
+        uint32 tmpSize = 16;
+        GetEmptyBufFromList((uint32)track_num,&tmpSize, (void **)pBuf);
+        if (!*pBuf) {
+            LOG_ERROR("Shouldn't be here!!!\n");
+            return OMX_ErrorInsufficientResources;
+        }
+        *data_size = 0;
+        ts = -1;
+    }
+    else
+        *pBuf = (MediaBuf *)buffer_context;
+
     (*pBuf)->buf.nTimeStamp = ts;
     (*pBuf)->buf.nFilledLen = (OMX_U32)*data_size;
 

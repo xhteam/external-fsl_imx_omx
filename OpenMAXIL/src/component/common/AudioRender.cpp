@@ -909,6 +909,7 @@ OMX_ERRORTYPE AudioRender::DoExec2Pause()
 {
 	OMX_ERRORTYPE ret = OMX_ErrorNone;
 
+    LOG_DEBUG("AudioRender::DoExec2Pause");
 	if (AudioRenderRingBuffer.AudioDataLen() == 0 || bHeardwareError == OMX_TRUE)
 	{
 		LOG_DEBUG("No audio data for Fade out process.\n");
@@ -941,6 +942,7 @@ OMX_ERRORTYPE AudioRender::DoExec2Pause()
 	LOG_DEBUG("Set reference time to clock: %lld\n", PlayingTime);
 	ClockSetConfig(OMX_IndexConfigTimeCurrentAudioReference, &ReferTime);
 
+    ret = AudioRenderDoExec2Pause();
     return ret;
 }
 
@@ -948,13 +950,21 @@ OMX_ERRORTYPE AudioRender::DoPause2Exec()
 {
 	OMX_ERRORTYPE ret = OMX_ErrorNone;
 
-	LOG_DEBUG("Fade in begin.\n");
+	LOG_DEBUG("AudioRender::DoPause2Exec Fade in begin.\n");
 	AudioRenderFadeInFadeOut.SetMode(FADEIN);
 	nWriteOutLen = nPeriodSize * nSampleSize;
 
+    ret = AudioRenderDoPause2Exec();
     return ret;
 }
-
+OMX_ERRORTYPE AudioRender::AudioRenderDoExec2Pause()
+{
+    return OMX_ErrorNone;
+}
+OMX_ERRORTYPE AudioRender::AudioRenderDoPause2Exec()
+{
+    return OMX_ErrorNone;
+}
 OMX_ERRORTYPE AudioRender::DoExec2Idle()
 {
 	OMX_ERRORTYPE ret = OMX_ErrorNone;

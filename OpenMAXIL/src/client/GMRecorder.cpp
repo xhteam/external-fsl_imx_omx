@@ -1971,7 +1971,7 @@ OMX_ERRORTYPE GMRecorder::start()
 		}
 	}
 
-    State = RECORDER_STATE_PLAYING;
+    State = RECORDER_STATE_RECORDING;
     fsl_osal_mutex_unlock(Lock);
 
 	return ret;
@@ -1983,7 +1983,7 @@ OMX_ERRORTYPE GMRecorder::pause()
 
     fsl_osal_mutex_lock(Lock);
 
-    if(State != RECORDER_STATE_PLAYING) {
+    if(State != RECORDER_STATE_RECORDING) {
         fsl_osal_mutex_unlock(Lock);
         return OMX_ErrorIncorrectStateOperation;
     }
@@ -2041,6 +2041,9 @@ OMX_ERRORTYPE GMRecorder::WaitStop()
         if(((bHasAudio && bAudioEos) || !bHasAudio)
                 && ((bHasVideo && bVideoEos) || !bHasVideo))
             break;
+        // break if error.
+        if (bError == OMX_TRUE)
+            break;
         fsl_osal_sleep(50000);
     }
 
@@ -2063,11 +2066,11 @@ OMX_ERRORTYPE GMRecorder::stop()
 
     printf("Stop recorder.\n");
 
-    State = RECORDER_STATE_STOP;
+    if (bError != OMX_TRUE && State == RECORDER_STATE_RECORDING) {
+        WaitStop();
+    }
 
-	if (bError != OMX_TRUE) {
-		WaitStop();
-	}
+    State = RECORDER_STATE_STOP;
 
     //stop clock
     if(Clock != NULL) {

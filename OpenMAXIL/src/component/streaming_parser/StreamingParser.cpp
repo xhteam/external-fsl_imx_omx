@@ -772,7 +772,7 @@ OMX_ERRORTYPE StreamingParser::DumpDataToOMXBuffer(
         else {
             pBufferHdr->nFilledLen = 0;
             pBufferHdr->nOffset = 0;
-            pBufferHdr->nTimeStamp = 0;
+            pBufferHdr->nTimeStamp = -1;
             pBufferHdr->nFlags = OMX_BUFFERFLAG_EOS;
             return OMX_ErrorNone;
         }

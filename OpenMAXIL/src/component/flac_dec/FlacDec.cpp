@@ -353,13 +353,17 @@ AUDIO_FILTERRETURNTYPE FlacDec::AudioFilterFrame()
 
 	if (FlacRet == FLACD_OK || FlacRet == FLACD_CONTINUE_DECODING)
 	{
+        if(0 == OutputLenPerChannel){
+            return AUDIO_FILTER_FAILURE;
+        }
 		if (PcmMode.nChannels != (OMX_U16)pFlacDecConfig->channel_no
 				|| PcmMode.nSamplingRate != (OMX_U32)pFlacDecConfig->sampling_rate
 				|| PcmMode.nBitPerSample != pFlacDecConfig->bit_per_sample)
 		{
 			LOG_DEBUG("FLAC decoder channel: %d sample rate: %d\n", \
 					pFlacDecConfig->channel_no, pFlacDecConfig->sampling_rate);
-			if (pFlacDecConfig->channel_no == 0 || pFlacDecConfig->sampling_rate == 0)
+            if (pFlacDecConfig->channel_no == 0 || pFlacDecConfig->sampling_rate == 0
+                || pFlacDecConfig->bit_per_sample == 0)
 			{
 				return AUDIO_FILTER_FAILURE;
 			}

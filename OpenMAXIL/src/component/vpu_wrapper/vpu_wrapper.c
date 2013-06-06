@@ -194,7 +194,7 @@ static int g_seek_dump=DUMP_ALL_DATA;	/*0: only dump data after seeking; otherwi
 #else
 #define VPU_BITS_BUF_SIZE		(1024*1024)
 #endif
-#define VPU_SLICE_SAVE_SIZE	0x2D800
+#define VPU_SLICE_SAVE_SIZE	0x17E800		//worst slice buffer size: 1920*1088*1.5/2= 1.5MB
 #define VPU_PS_SAVE_SIZE		0x80000
 #define VPU_VP8_MBPARA_SIZE	0x87780			//68 * (1920 * 1088 / 256)=0x87780;
 
@@ -205,7 +205,7 @@ static int g_seek_dump=DUMP_ALL_DATA;	/*0: only dump data after seeking; otherwi
 #define VPU_MAX_INIT_SIZE		(VPU_BITS_BUF_SIZE-256*1024)		//avoid dead loop for unsupported clips
 #define VPU_MAX_INIT_LOOP		(500)				//avoid dead loop for crashed files, including null file
 
-#define VPU_MAX_DEC_SIZE		(8*1024*1024)	//avoid dead loop in decode state for corrupted clips
+#define VPU_MAX_DEC_SIZE		(200*1024*1024)//(8*1024*1024)	//avoid dead loop in decode state for corrupted clips
 #define VPU_MAX_DEC_LOOP		(4000)			//avoid dead loop in decode state for corrupted clips
 #endif
 
@@ -4030,7 +4030,7 @@ int VpuCheckDeadLoop(VpuDecObj* pObj ,VpuBufferNode* pInData,int* pOutRetCode,in
 {
 	//*pNoErr=1;		//don't reset it !!!!: the *pNoErr already has one valid value.
 #ifdef VPU_AVOID_DEAD_LOOP
-#define VPU_MAX_NULL_LOOP (10000)	//gmplayer: cost about 60 seconds ?
+#define VPU_MAX_NULL_LOOP (500000)//set big enough, it is just used to avoid dead
 	static int total_init_size=0;		// avoid dead loop at init step
 	static int total_init_loop=0;	// avoid dead loop at init step 
 	static int total_dec_size=0;	// avoid dead loop at decode step

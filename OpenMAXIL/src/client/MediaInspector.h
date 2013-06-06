@@ -33,6 +33,7 @@ typedef enum {
     TYPE_AC3,
     TYPE_WAV,
     TYPE_OGG,
+    TYPE_AMR,
     TYPE_HTTPLIVE
 }MediaType;
 

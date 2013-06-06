@@ -9,7 +9,8 @@
 
 #include <AudioSystem.h>
 #include "AndroidAudioRender.h"
-
+//#undef LOG_DEBUG
+//#define LOG_DEBUG printf
 using namespace android;
 
 AndroidAudioRender::AndroidAudioRender()
@@ -143,7 +144,7 @@ OMX_ERRORTYPE AndroidAudioRender::WriteDevice(OMX_U8 *pBuffer, OMX_U32 nActuralL
     if(mAudioSink == NULL)
         return OMX_ErrorBadParameter;
 
-    LOG_DEBUG("AndroidAudioRender write: %d\n", nActuralLen);
+    LOG_LOG("AndroidAudioRender write: %d\n", nActuralLen);
 	if(PcmMode.nBitPerSample == 8)
 	{
 		// Convert to U8
@@ -190,8 +191,9 @@ OMX_ERRORTYPE AndroidAudioRender::ResetDevice()
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE AndroidAudioRender::DoExec2Pause()
+OMX_ERRORTYPE AndroidAudioRender::AudioRenderDoExec2Pause()
 {
+    LOG_DEBUG("AndroidAudioRender::AudioRenderDoExec2Pause");
     if(mAudioSink == NULL)
         return OMX_ErrorBadParameter;
 
@@ -201,18 +203,20 @@ OMX_ERRORTYPE AndroidAudioRender::DoExec2Pause()
 		printf("Add latency: %lld\n", latency);
 		fsl_osal_sleep(latency);
 #endif
+        LOG_DEBUG("AndroidAudioRender::DoExec2Pause stop");
 		mAudioSink->stop();
 	} else {
+	    LOG_DEBUG("AndroidAudioRender::DoExec2Pause pause");
 		mAudioSink->pause();
 	}
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE AndroidAudioRender::DoPause2Exec()
+OMX_ERRORTYPE AndroidAudioRender::AudioRenderDoPause2Exec()
 {
     if(mAudioSink == NULL)
         return OMX_ErrorBadParameter;
-
+    LOG_DEBUG("AndroidAudioRender::AudioRenderDoPause2Exec");
     mAudioSink->start();
     return OMX_ErrorNone;
 }

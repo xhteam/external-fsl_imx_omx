@@ -37,8 +37,8 @@ class AndroidAudioRender : public AudioRender {
         OMX_ERRORTYPE DrainDevice();
         OMX_ERRORTYPE DeviceDelay(OMX_U32 *nDelayLen);
         OMX_ERRORTYPE WriteDevice(OMX_U8 *pBuffer, OMX_U32 nActuralLen);
-        OMX_ERRORTYPE DoExec2Pause();
-        OMX_ERRORTYPE DoPause2Exec();
+        OMX_ERRORTYPE AudioRenderDoExec2Pause();
+        OMX_ERRORTYPE AudioRenderDoPause2Exec();
         OMX_BOOL bNativeDevice;
         sp<MediaPlayerBase::AudioSink> mAudioSink;
 

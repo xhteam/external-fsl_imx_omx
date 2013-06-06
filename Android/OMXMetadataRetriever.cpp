@@ -77,6 +77,13 @@ OMXMetadataRetriever::~OMXMetadataRetriever()
         mExtractor = NULL;
     }
 
+    if (mAlbumArt) {
+        if (mAlbumArt->mData) {
+            FSL_DELETE(mAlbumArt->mData);
+        }
+        FSL_DELETE(mAlbumArt);
+    }
+
     if (mSharedFd >= 0) {
         close(mSharedFd);
     }
@@ -103,6 +110,13 @@ status_t OMXMetadataRetriever::setDataSource(const char *url)
 	LOG_DEBUG("OMXMetadataRetriever set data source %s\n", url);
 
 	mParsedMetaData = false;
+    mMetaData.clear();
+    if (mAlbumArt) {
+        if (mAlbumArt->mData) {
+            FSL_DELETE(mAlbumArt->mData);
+        }
+        FSL_DELETE(mAlbumArt);
+    }
 
     if (mSharedFd >= 0) {
         close(mSharedFd);
@@ -122,6 +136,13 @@ status_t OMXMetadataRetriever::setDataSource(const char *url,
 	LOG_DEBUG("OMXMetadataRetriever set data source %s\n", url);
 
 	mParsedMetaData = false;
+    mMetaData.clear();
+    if (mAlbumArt) {
+        if (mAlbumArt->mData) {
+            FSL_DELETE(mAlbumArt->mData);
+        }
+        FSL_DELETE(mAlbumArt);
+    }
 
     if (mSharedFd >= 0) {
         close(mSharedFd);
@@ -142,6 +163,13 @@ status_t OMXMetadataRetriever::setDataSource(
             fd, offset, length);
 
 	mParsedMetaData = false;
+    mMetaData.clear();
+    if (mAlbumArt) {
+        if (mAlbumArt->mData) {
+            FSL_DELETE(mAlbumArt->mData);
+        }
+        FSL_DELETE(mAlbumArt);
+    }
 
     if (mSharedFd >= 0) {
         close(mSharedFd);
@@ -425,7 +453,7 @@ const char* OMXMetadataRetriever::extractMetadata(int keyCode)
 	     return NULL;
 	}
 	
-	return strdup(mMetaData.valueAt(index).string());
+	return mMetaData.valueAt(index).string();
 }
 
 

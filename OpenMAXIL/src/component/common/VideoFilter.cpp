@@ -436,7 +436,7 @@ OMX_ERRORTYPE VideoFilter::ProcessDataBuffer()
                 GetOutputBuffer(&pBuffer,&nOutSize);
 				if (nOutSize == 0) {
 					nInvalidFrameCnt ++;
-					if (nInvalidFrameCnt < MOSAIC_COUNT) {
+					if (nInvalidFrameCnt <= MOSAIC_COUNT) {
 						SetOutputBuffer(pBuffer);	//still need to return it to vpu to avoid the frame is isolated in the pipeline
 						tsmGetFrmTs(hTsHandle, NULL);
 						break;
@@ -480,6 +480,11 @@ OMX_ERRORTYPE VideoFilter::ProcessInputBuffer()
         if(ports[IN_PORT]->BufferNum() > 0) {
             if(OMX_TRUE != tsmHasEnoughSlot(hTsHandle)) {
                 LOG_DEBUG("No more space to handle input ts.\n");
+                if(bInit == OMX_FALSE){
+                    LOG_ERROR("init operation timeout, clip is corrupted ! \n");
+                    SendEvent(OMX_EventError, OMX_ErrorStreamCorrupt, 0, NULL);
+                    return OMX_ErrorStreamCorrupt; 
+                }
                 return OMX_ErrorNone;
             }
 
@@ -536,6 +541,7 @@ OMX_ERRORTYPE VideoFilter::ProcessOutputBuffer()
             if(bNewSegment == OMX_TRUE && bLastInput == OMX_TRUE) {
                 bLastOutput = OMX_TRUE;
                 pBufferHdr->nFlags = OMX_BUFFERFLAG_EOS | OMX_BUFFERFLAG_STARTTIME;
+                pBufferHdr->nTimeStamp = tsmGetFrmTs(hTsHandle, NULL);
                 ports[OUT_PORT]->SendBuffer(pBufferHdr);
                 return OMX_ErrorNoMore;
             }

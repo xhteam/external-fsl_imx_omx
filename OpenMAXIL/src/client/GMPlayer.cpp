@@ -708,6 +708,14 @@ OMX_ERRORTYPE GMPlayer::Stop()
 
     State = GM_STATE_STOP;
 
+    //pause render first to avoid noise popup.
+    if(AudioRender != NULL)
+        AudioRender->StateTransDownWard(OMX_StatePause);
+    if(VideoRender != NULL)
+        VideoRender->StateTransDownWard(OMX_StatePause);
+    if(Clock != NULL)
+        Clock->StateTransDownWard(OMX_StatePause);
+
     //stop clock
     if(Clock != NULL) {
         OMX_TIME_CONFIG_CLOCKSTATETYPE ClockState;
@@ -1491,6 +1499,8 @@ OMX_STRING GMPlayer::MediaTypeInspectBySubfix()
     //    role = "parser.flv";
     else if (fsl_osal_strcmp(subfix, ".webm")==0)
         role = (OMX_STRING)"parser.mkv";
+    else if (fsl_osal_strcmp(subfix, ".amr")==0 || fsl_osal_strcmp(subfix, ".awb")==0)
+        role = (OMX_STRING)"parser.amr";
 
     LOG_DEBUG("%s, role: %s\n", __FUNCTION__, role);
 
@@ -1532,6 +1542,8 @@ OMX_STRING GMPlayer::MediaTypeInspectByContent()
         role = (OMX_STRING)"parser.ogg";
     else if(type == TYPE_HTTPLIVE)
         role = (OMX_STRING)"parser.httplive";
+    else if(type == TYPE_AMR)
+        role = (OMX_STRING)"parser.amr";
     else
         role = NULL;
 

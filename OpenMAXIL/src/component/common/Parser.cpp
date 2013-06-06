@@ -35,6 +35,8 @@ OMX_STRING Parser::GetMimeFromComponentRole(OMX_U8 *componentRole)
             { "parser.wav", NULL,               NULL,                           "audio/x-wav",          "audio_unsupport/x-wav" },
             { "parser.flac",NULL,               NULL,                           "audio/flac",           "audio_unsupport/flac" },
             { "parser.ogg", NULL,               NULL,                           "application/ogg",      "application_unsupport/ogg" },
+            { "parser.amr", NULL,               NULL,                           "audio/amr",            "audio_unsupport/amr" },
+
     };
 
     for (OMX_U32 i = 0; i < sizeof(kRoleToMime) / sizeof(kRoleToMime[0]); ++i) {

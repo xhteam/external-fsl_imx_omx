@@ -32,7 +32,7 @@ SurfaceRender::SurfaceRender()
     ComponentVersion.s.nRevision = 0x0;
     ComponentVersion.s.nStep = 0x0;
     role_cnt = 1;
-    role[0] = fsl_osal_strdup("video_render.surface");
+    role[0] = (OMX_STRING)"video_render.surface";
 
     nFrameBufferMin = 1;
     nFrameBufferActual = 1;
