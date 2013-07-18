@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2009-2012, Freescale Semiconductor Inc.,
+ *  Copyright (c) 2009-2013, Freescale Semiconductor Inc.,
  *  All Rights Reserved.
  *
  *  The following programs are the sole property of Freescale Semiconductor Inc.,
@@ -225,12 +225,16 @@ AUDIO_FILTERRETURNTYPE PcmDec::AudioFilterFrame()
 		OMX_S8 *pDst = (OMX_S8 *)pOutBufferHdr->pBuffer;
 		OMX_U8 *pSrc = pBuffer;
 		OMX_S32 sTmp, i;
-		for (i = 0; i < (int)nActuralLen; i++)
-		{
-			sTmp = pSrc[i];
-			sTmp -= 128;
-			pDst[i] = (OMX_S8)sTmp;
-		}
+           if(PcmMode.eNumData == OMX_NumericalDataUnsigned){
+                for (i = 0; i < (int)nActuralLen; i++)
+                {
+                    sTmp = pSrc[i];
+                    sTmp -= 128;
+                    pDst[i] = (OMX_S8)sTmp;
+                }
+           }else{
+               fsl_osal_memcpy((fsl_osal_ptr)pOutBufferHdr->pBuffer, (fsl_osal_ptr)pBuffer, nActuralLen);
+           }
 	}
 	else
 	{

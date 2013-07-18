@@ -346,6 +346,7 @@ OMX_ERRORTYPE WmvDecoder::FlushInputBuffer()
     nInputSize = 0;
     nInputOffset = 0;
     bInEos = OMX_FALSE;
+    eWmvDecState = WMVDEC_RUN;
     return OMX_ErrorNone;
 }
 

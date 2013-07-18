@@ -609,42 +609,54 @@ void FslParser::SetAudioCodecType(
                 case AUDIO_PCM_U8:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianLittle;
                     track->audio_type.pcm_type.nBitPerSample = 8;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataUnsigned;
                     LOG_DEBUG("PCM, 8 bits per sample\n");            
                     break;
-
+                case AUDIO_PCM_S8:
+                    track->audio_type.pcm_type.eEndian = OMX_EndianLittle;
+                    track->audio_type.pcm_type.nBitPerSample = 8;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
+                    LOG_DEBUG("PCM, 8 bit signed per sample");
+                    break;
                 case AUDIO_PCM_S16LE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianLittle;
                     track->audio_type.pcm_type.nBitPerSample = 16;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, little-endian, 16 bits per sample\n");            
                     break;
 
                 case AUDIO_PCM_S24LE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianLittle;
                     track->audio_type.pcm_type.nBitPerSample = 24;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, little-endian, 24 bits per sample\n");            
                     break;
 
                 case AUDIO_PCM_S32LE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianLittle;
                     track->audio_type.pcm_type.nBitPerSample = 32;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, little-endian, 32 bits per sample\n");            
                     break;
 
                 case AUDIO_PCM_S16BE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianBig;
                     track->audio_type.pcm_type.nBitPerSample = 16;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, big-endian, 16 bits per sample\n");            
                     break;
 
                 case AUDIO_PCM_S24BE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianBig;
                     track->audio_type.pcm_type.nBitPerSample = 24;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, big-endian, 24 bits per sample\n");            
                     break;
 
                 case AUDIO_PCM_S32BE:        
                     track->audio_type.pcm_type.eEndian = OMX_EndianBig;
                     track->audio_type.pcm_type.nBitPerSample = 32;
+                    track->audio_type.pcm_type.eNumData = OMX_NumericalDataSigned;
                     LOG_DEBUG("PCM, big-endian, 32 bits per sample\n");            
                     break;
 
@@ -1714,10 +1726,10 @@ OMX_ERRORTYPE FslParser::GetOneSample(MediaBuf **pBuf, uint32 *data_size, uint32
     OMX_ERRORTYPE ret = OMX_ErrorNone;
     int32 err = (int32)PARSER_SUCCESS;       
     void * buffer_context = NULL;
-    OMX_TICKS ts;
-    uint64 endTime;
+    OMX_TICKS ts = 0;
+    uint64 endTime = 0;
     uint8 *tmp = NULL;
-    uint32 sampleFlag;
+    uint32 sampleFlag = 0;
     uint32 track_num_got = track_num;
 
     fsl_osal_mutex_lock(sParserMutex); 
@@ -2287,9 +2299,9 @@ OMX_ERRORTYPE FslParser::GetAsyncDuration()
             break;
         }
         nAudioDuration = tracks[i].usDuration;
-        DurationTmp = usDuration;
-        if (nAudioDuration > DurationTmp)
-            DurationTmp = nAudioDuration;
+
+        DurationTmp = nAudioDuration;
+        usDuration = DurationTmp;
         sprintf(tmp, "%lld", (DurationTmp + 500) / 1000);
         SetMetadata((OMX_STRING)"duration", tmp, fsl_osal_strlen(tmp)+1);
         err = OMX_ErrorNone;
@@ -2606,11 +2618,8 @@ OMX_ERRORTYPE FslParser::SetupPortMediaFormat()
          nSubtitleDataSize=SUBTITLE_MAX_FRAMESIZE;
      }
 
-	DurationTmp = usDuration;
-	if (nVideoDuration > DurationTmp)
-		DurationTmp = nVideoDuration;
-	if (nAudioDuration > DurationTmp)
-		DurationTmp = nAudioDuration;
+       DurationTmp = nAudioDuration > nVideoDuration ? nAudioDuration:nVideoDuration;
+       usDuration = DurationTmp;
 	// The duration value is a string representing the duration in ms. 
 	sprintf(tmp, "%lld", (DurationTmp + 500) / 1000); 
     if(bNeedAsyncDuration == OMX_TRUE && isStreamingSource != OMX_TRUE && isLiveSource != OMX_TRUE)

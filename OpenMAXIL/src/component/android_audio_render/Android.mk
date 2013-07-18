@@ -16,7 +16,7 @@ LOCAL_C_INCLUDES += $(FSL_OMX_INCLUDES)
 LOCAL_SHARED_LIBRARIES := lib_omx_common_v2_arm11_elinux \
     			  lib_omx_osal_v2_arm11_elinux \
                           lib_omx_utils_v2_arm11_elinux \
-			  libmedia libutils libmediaplayerservice
+			  libmedia libutils libcutils libmediaplayerservice
 
 LOCAL_PRELINK_MODULE := false
 	

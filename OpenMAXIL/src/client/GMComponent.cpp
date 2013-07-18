@@ -1003,6 +1003,7 @@ OMX_ERRORTYPE GMComponent::SendCommand(
             if(nCount ++ > 50) {
                 LOG_ERROR("%s send command[%d:%d] timeout.\n", name, Cmd, nParam1);
                 ret = OMX_ErrorTimeout;
+                ProcessingCmd.Cmd = OMX_CommandMax;
                 break;
             }
             continue;

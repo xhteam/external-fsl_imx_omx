@@ -456,6 +456,10 @@ OMX_ERRORTYPE FSLOMXWrapper::SetParameter(
         case OMX_IndexParamUseAndroidPrependSPSPPStoIDRFrames:
             {
                 PrependSPSPPSToIDRFramesParams *pParams = (PrependSPSPPSToIDRFramesParams*)pStructure;
+                OMX_PARAM_PREPEND_SPSPPS_TO_IDR sPrependSPSPPSToIDR;
+                OMX_INIT_STRUCT(&sPrependSPSPPSToIDR, OMX_PARAM_PREPEND_SPSPPS_TO_IDR);
+                sPrependSPSPPSToIDR.bEnableSPSToIDR= pParams->bEnable;
+                ret = OMX_SetParameter(ComponentHandle, nParamIndex, &sPrependSPSPPSToIDR);
             }
             break;
 #endif

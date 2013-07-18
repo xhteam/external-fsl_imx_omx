@@ -180,7 +180,9 @@ OMX_SFD_PIPE_API CPresult SharedFdPipe_SetPosition(
                 }
             }
             nActualWritten = write(hPipe->fd, hPipe->pWriteBuffer, nNeedWriteLen);
-            LOG_DEBUG("File size: %lld\n", hPipe->nPos + nActualWritten);
+            hPipe->nLen += nActualWritten;
+            LOG_DEBUG("write len: %d\n", nActualWritten);
+            LOG_DEBUG("File size: %lld\n", hPipe->nLen);
             hPipe->nPos = lseek64(hPipe->fd, hPipe->nPos, SEEK_SET);
             if (nActualWritten < nNeedWriteLen)
 				return KD_ENOSPC;

@@ -217,6 +217,7 @@ VpuEncRetCode VPUCom_Init(VpuEncInputParam* pVpuEncInputPara,VpuEncoderMemInfo* 
 	sEncOpenParam.nFrameRate=pVpuEncInputPara->nFrameRate;
 	sEncOpenParam.nBitRate=pVpuEncInputPara->nBitRate/1000;	// bps => kbps !!!
 	sEncOpenParam.nGOPSize=pVpuEncInputPara->nGOPSize;
+	sEncOpenParam.nIntraRefresh=pVpuEncInputPara->nIntraFreshNum;
 	sEncOpenParam.nChromaInterleave=pVpuEncInputPara->nChromaInterleave;
 	sEncOpenParam.sMirror=pVpuEncInputPara->sMirror;
 
@@ -242,7 +243,23 @@ VpuEncRetCode VPUCom_Init(VpuEncInputParam* pVpuEncInputPara,VpuEncoderMemInfo* 
 		//VPU_EncClose(nHandle);
 		return VPU_ENC_RET_FAILURE;
 	}	
-	
+
+	if(pVpuEncInputPara->nIntraFreshNum>0){
+		ret=VPU_EncConfig(*pOutHandle, VPU_ENC_CONF_INTRA_REFRESH, &pVpuEncInputPara->nIntraFreshNum);
+		if(VPU_ENC_RET_SUCCESS!=ret){
+			VPU_ENC_COMP_ERR_LOG("%s: vpu config failure: config=0x%X, ret=%d \r\n",__FUNCTION__,(UINT32)VPU_ENC_CONF_INTRA_REFRESH,ret);
+			return VPU_ENC_RET_FAILURE;
+		}
+	}
+
+	if(OMX_TRUE==pVpuEncInputPara->bEnabledSPSIDR){
+		ret=VPU_EncConfig(*pOutHandle, VPU_ENC_CONF_ENA_SPSPPS_IDR, NULL);
+		if(VPU_ENC_RET_SUCCESS!=ret){
+			VPU_ENC_COMP_ERR_LOG("%s: vpu config failure: config=0x%X, ret=%d \r\n",__FUNCTION__,(UINT32)VPU_ENC_CONF_ENA_SPSPPS_IDR,ret);
+			return VPU_ENC_RET_FAILURE;
+		}
+	}
+
 	//get initinfo
 	ret=VPU_EncGetInitialInfo(*pOutHandle,pOutInitInfo);
 	if(VPU_ENC_RET_SUCCESS!=ret)
@@ -749,7 +766,8 @@ OMX_S32 SetDefaultEncParam(VpuEncInputParam* pEncParam)
 
 	pEncParam->nIDRPeriod=pEncParam->nGOPSize;
 	pEncParam->nRefreshIntra=0;
-
+	pEncParam->nIntraFreshNum=0;
+	pEncParam->bEnabledSPSIDR=OMX_FALSE;
 	return 1;	
 }
 
@@ -1664,9 +1682,30 @@ OMX_ERRORTYPE VpuEncoder::SetParameter(OMX_INDEXTYPE nParamIndex, OMX_PTR pCompo
 	{
 			OMX_VIDEO_PARAM_INTRAREFRESHTYPE * pPara;
 			pPara=(OMX_VIDEO_PARAM_INTRAREFRESHTYPE *)pComponentParameterStructure;
-			ASSERT(pPara->nPortIndex==IN_PORT);	
-			//set refresh mode ??
-			return OMX_ErrorUnsupportedIndex;
+			ASSERT(pPara->nPortIndex==IN_PORT);
+			VPU_ENC_COMP_LOG("%s: eRefreshMode: %d, nAirMBs: %d, nAirRef: %d, nCirMBs: %d \r\n",__FUNCTION__,pPara->eRefreshMode,pPara->nAirMBs,pPara->nAirRef,pPara->nCirMBs);
+			switch(pPara->eRefreshMode){
+				case OMX_VIDEO_IntraRefreshCyclic: /*it is used by wifi display*/
+					//in fact, vpu don't support this mode, we just map it to normal mode
+					sVpuEncInputPara.nIntraFreshNum=pPara->nCirMBs;
+					break;
+				case OMX_VIDEO_IntraRefreshAdaptive:
+					sVpuEncInputPara.nIntraFreshNum=pPara->nAirMBs;
+					break;
+				case OMX_VIDEO_IntraRefreshBoth:
+				case OMX_VIDEO_IntraRefreshMax:
+				default:
+					//do nothing, ignore it
+					VPU_ENC_COMP_ERR_LOG("unsupport refresh mode: %d \r\n",pPara->eRefreshMode);
+					break;
+			}
+	}
+	else if (nParamIndex==OMX_IndexParamUseAndroidPrependSPSPPStoIDRFrames){
+		OMX_PARAM_PREPEND_SPSPPS_TO_IDR * pPara;
+		pPara=(OMX_PARAM_PREPEND_SPSPPS_TO_IDR*)pComponentParameterStructure;
+		ASSERT(pPara->nPortIndex==IN_PORT);
+		VPU_ENC_COMP_LOG("%s: bEnableSPSToIDR: %d \r\n",__FUNCTION__,pPara->bEnableSPSToIDR);
+		sVpuEncInputPara.bEnabledSPSIDR=pPara->bEnableSPSToIDR;
 	}
 	else if (nParamIndex==OMX_IndexParamVideoBitrate)
 	{

@@ -55,6 +55,11 @@ class AndroidAudioRender : public AudioRender {
         OMX_U32 nBufferSize;
         OMX_U32 nChannelsOut;
         OMX_U32 nBitPerSampleOut;
+#ifdef JB
+        audio_format_t format;
+#else
+        OMX_S32 format;
+#endif
 };
 
 }

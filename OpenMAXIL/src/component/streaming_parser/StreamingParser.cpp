@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2011-2012, Freescale Semiconductor Inc.,
+ *  Copyright (c) 2011-2013, Freescale Semiconductor Inc.,
  *  All Rights Reserved.
  *
  *  The following programs are the sole property of Freescale Semiconductor Inc.,
@@ -224,6 +224,7 @@ void StreamingParser::SetAudioCodecType(
             pPortDef->format.audio.eEncoding = OMX_AUDIO_CodingAMR;
             break;
         case CODEC_ID_PCM_U8:
+        case CODEC_ID_PCM_S8:
         case CODEC_ID_PCM_S16LE:
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_S24LE:
@@ -331,30 +332,42 @@ OMX_ERRORTYPE StreamingParser::GetParameter(
                     case CODEC_ID_PCM_U8:
                         pParam->nBitPerSample = 8;
                         pParam->eEndian = OMX_EndianLittle;
+                        pParam->eNumData = OMX_NumericalDataUnsigned;
+                        break;
+                    case CODEC_ID_PCM_S8:
+                        pParam->nBitPerSample = 8;
+                        pParam->eEndian = OMX_EndianLittle;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S16LE:
                         pParam->nBitPerSample = 16;
                         pParam->eEndian = OMX_EndianLittle;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S16BE:
                         pParam->nBitPerSample = 16;
                         pParam->eEndian = OMX_EndianBig;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S24LE:
                         pParam->nBitPerSample = 24;
                         pParam->eEndian = OMX_EndianLittle;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S24BE:
                         pParam->nBitPerSample = 24;
                         pParam->eEndian = OMX_EndianBig;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S32LE:
                         pParam->nBitPerSample = 32;
                         pParam->eEndian = OMX_EndianLittle;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     case CODEC_ID_PCM_S32BE:
                         pParam->nBitPerSample = 32;
                         pParam->eEndian = OMX_EndianBig;
+                        pParam->eNumData = OMX_NumericalDataSigned;
                         break;
                     default:
                         break;

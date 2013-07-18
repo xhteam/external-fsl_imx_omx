@@ -1000,8 +1000,9 @@ OMX_S32 FramePoolSearchMappedDecBuffer(VpuDecoderFrmPoolInfo* pInFrmPool,OMX_PTR
 OMX_S32 PostProcessSetStrategy(VpuDecInitInfo* pInInitInfo,OMX_BOOL* pOutEnabled, OMX_U32* pOutBufNum,VpuCodStd InFormat,ipu_motion_sel* pOutMotion)
 {
 #define POST_PROCESS_MAX_FRM_PIXELS (1920*1088*12)
-	OMX_BOOL bEnable=OMX_FALSE;	   //default
 	ipu_motion_sel motion=MED_MOTION;  //default
+	OMX_BOOL bClipEnable=OMX_FALSE;
+	OMX_BOOL bUserEnable=OMX_FALSE;
 #ifdef VPU_COMP_DIS_POST
 	//disable post-process since risk exist when CHROMA_ALIGN !=1 (gpu render limitation)
 #else
@@ -1015,7 +1016,7 @@ OMX_S32 PostProcessSetStrategy(VpuDecInitInfo* pInInitInfo,OMX_BOOL* pOutEnabled
 				case VPU_V_MPEG2:
 				case VPU_V_VC1:
 				case VPU_V_VC1_AP:
-					bEnable=OMX_TRUE;
+					bClipEnable=OMX_TRUE;
 					break;
 				default:
 					break;
@@ -1051,11 +1052,13 @@ OMX_S32 PostProcessSetStrategy(VpuDecInitInfo* pInInitInfo,OMX_BOOL* pOutEnabled
 			else
 			{
 				level=fsl_osal_atoi(&symbol);
-				if(level==0) bEnable=OMX_FALSE;
+				if(level>0) bUserEnable=OMX_TRUE;
+				if(level==0) bUserEnable=OMX_FALSE;
 				else if(level==1) motion=LOW_MOTION;
 				else if (level==2) motion=MED_MOTION;
 				else if (level==3) motion=HIGH_MOTION;
 				else motion=MED_MOTION;
+
 				//printf("post process: enable: %d, mode: %d  \r\n",bEnable,motion);		
 			}
 			fsl_osal_fclose(fpPost);
@@ -1064,7 +1067,7 @@ OMX_S32 PostProcessSetStrategy(VpuDecInitInfo* pInInitInfo,OMX_BOOL* pOutEnabled
 #endif	
 #endif
 
-	if(bEnable==OMX_FALSE)
+	if((bUserEnable==OMX_FALSE) || (bClipEnable==OMX_FALSE))
 	{
 		*pOutEnabled=OMX_FALSE;
 		*pOutBufNum=DEFAULT_BUF_OUT_POST_ZEROCNT;
@@ -1361,11 +1364,18 @@ OMX_ERRORTYPE ConfigVpu(VpuDecHandle InHandle,OMX_TICKS nTimeStamp,OMX_PTR pCloc
 {
 	VpuDecRetCode ret;
 	OMX_TIME_CONFIG_TIMESTAMPTYPE sCur;
+        OMX_TIME_CONFIG_SCALETYPE sScale;
 	VpuDecConfig config;
 	OMX_S32 param;
 
 	if(pClock!=NULL)
 	{
+            OMX_INIT_STRUCT(&sScale, OMX_TIME_CONFIG_SCALETYPE);
+            OMX_GetConfig(pClock, OMX_IndexConfigTimeScale, &sScale);
+            if(!IS_NORMAL_PLAY(sScale.xScale)){
+                VPU_COMP_LOG("*** not normal playback for drop B, return");
+                return OMX_ErrorNone;
+            }
 		OMX_INIT_STRUCT(&sCur, OMX_TIME_CONFIG_TIMESTAMPTYPE);
 		OMX_GetConfig(pClock, OMX_IndexConfigTimeCurrentMediaTime, &sCur);
 		if(sCur.nTimestamp > (nTimeStamp - DROP_B_THRESHOLD))

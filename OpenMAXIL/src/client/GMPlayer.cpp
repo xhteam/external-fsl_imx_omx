@@ -1493,6 +1493,7 @@ OMX_ERRORTYPE GMPlayer::SysEventHandler(
                     if(Clock != NULL) {
                         OMX_GetConfig(Clock->hComponent, OMX_IndexConfigTimeScale, &sScale);
                         if(bVideoEos == OMX_TRUE && sScale.xScale >= MIN_TRICK_FORWARD_RATE*Q16_SHIFT) {
+                            bVideoEos = OMX_FALSE;
                             SetPlaySpeed(Q16_SHIFT);
                             Resume();
                             bVideoFFEos = OMX_TRUE;
@@ -4235,8 +4236,8 @@ OMX_ERRORTYPE GMPlayer::Trick2Normal(
     position = sCur.nTimestamp;
 
     GetStreamDuration(&Dur, Parser->PortPara[VIDEO_PORT_PARA].nStartPortNumber);
-    if(position > (Dur - OMX_TICKS_PER_SECOND))
-        position = Dur - OMX_TICKS_PER_SECOND;
+    if(position > Dur)
+        position = Dur;
     if(position < 0)
         position = 0;
 
@@ -5336,7 +5337,7 @@ OMX_ERRORTYPE GMPlayer::SetVideoSurface(OMX_PTR surface, OMX_VIDEO_SURFACE_TYPE 
     LOG_DEBUG("SetVideoSurface: %p\n", mSurface);
 
     if (bVideoDirectRendering == OMX_TRUE
-            && (State == GM_STATE_PLAYING || State == GM_STATE_PAUSE)) {
+            && (State == GM_STATE_PLAYING || State == GM_STATE_PAUSE || State == GM_STATE_LOADED)) {
         if (State == GM_STATE_PLAYING) {
             wasPlaying = OMX_TRUE;
 

@@ -45,6 +45,8 @@ typedef struct {
 	int nEnableAutoSkip;
 	int nIDRPeriod;		//for H.264
 	int nRefreshIntra;	//IDR for H.264
+	int nIntraFreshNum;
+	OMX_BOOL bEnabledSPSIDR; //SPS/PPS is added for every IDR frame
 } VpuEncInputParam;
 
 typedef struct

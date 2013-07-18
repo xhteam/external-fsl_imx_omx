@@ -11,6 +11,7 @@
 #include <AudioSystem.h>
 #endif
 #include "AndroidAudioRender.h"
+#include <cutils/properties.h>
 
 using namespace android;
 
@@ -136,11 +137,6 @@ OMX_ERRORTYPE AndroidAudioRender::GetChannelMask(OMX_U32* mask)
 OMX_ERRORTYPE AndroidAudioRender::SetDevice()
 {
     status_t status = NO_ERROR;
-#ifdef JB
-    audio_format_t format;
-#else
-    OMX_S32 format;
-#endif
     OMX_U32 nSamplingRate;
 
     if(mAudioSink == NULL)
@@ -155,12 +151,6 @@ OMX_ERRORTYPE AndroidAudioRender::SetDevice()
 
     if (nBitPerSampleOut > 16)
         nBitPerSampleOut = 16;
-
-#ifdef JB
-    // Need get from decoder.
-    OMX_U32 channelMask = 0;
-    GetChannelMask(&channelMask);
-#endif
 
     LOG_DEBUG("SetDevice: SampleRate: %d, Channels: %d, formats: %d, nClockScale %x\n", 
             PcmMode.nSamplingRate, nChannelsOut, nBitPerSampleOut, nClockScale);
@@ -202,7 +192,66 @@ OMX_ERRORTYPE AndroidAudioRender::SetDevice()
     audioType = sPortDef.format.audio.eEncoding;
     if(audioType == OMX_AUDIO_CodingIEC937)
         format = AUDIO_FORMAT_IEC937;
+
+
+#ifdef JB
+    if(audioType == OMX_AUDIO_CodingIEC937) 
+        format = AUDIO_FORMAT_PCM_16_BIT;
+
+    int afFrameCount, afSampleRate, bufferCount;
+
+    if (AudioSystem::getOutputFrameCount(&afFrameCount, AUDIO_STREAM_MUSIC) != NO_ERROR) 
+        return OMX_ErrorUndefined;
+
+    if (AudioSystem::getOutputSamplingRate(&afSampleRate, AUDIO_STREAM_MUSIC) != NO_ERROR) 
+        return OMX_ErrorUndefined;
+
+    bufferCount = DEFAULT_AUDIOSINK_BUFFERCOUNT;
+    char value[PROPERTY_VALUE_MAX];
+    if (property_get("ro.kernel.qemu", value, 0)) 
+        bufferCount  = 12;  // to prevent systematic buffer underrun for emulator
     
+    int frameCount = (nSamplingRate*afFrameCount*bufferCount)/afSampleRate;
+    int frameSize;
+    if (audio_is_linear_pcm(format)) {
+        frameSize = nChannelsOut * audio_bytes_per_sample(format);
+    } else {
+        frameSize = sizeof(uint8_t);
+    }
+
+    nBufferSize = frameCount * frameSize * PcmMode.nChannels \
+                  * PcmMode.nBitPerSample / nChannelsOut / nBitPerSampleOut;
+    nSampleSize = frameSize * PcmMode.nChannels \
+                  * PcmMode.nBitPerSample / nChannelsOut / nBitPerSampleOut;
+
+    // clockscale changed during playback, reopen audiosink
+    if (bOpened == OMX_TRUE) {
+        OMX_U32 nSamplingRate;
+
+        mAudioSink->stop();
+        mAudioSink->close();
+        nWrited = 0;
+
+        // Need get from decoder.
+        OMX_U32 channelMask = 0;
+        GetChannelMask(&channelMask);
+
+        LOG_DEBUG("SetDevice: SampleRate: %d, Channels: %d, nClockScale %x\n", 
+                PcmMode.nSamplingRate, nChannelsOut, nClockScale);
+
+        nSamplingRate = (OMX_U64)PcmMode.nSamplingRate * nClockScale / Q16_SHIFT;
+
+        audio_output_flags_t flags = (audioType == OMX_AUDIO_CodingIEC937) ? AUDIO_OUTPUT_FLAG_DIRECT : AUDIO_OUTPUT_FLAG_NONE;
+
+        if(NO_ERROR != mAudioSink->open(nSamplingRate, nChannelsOut, \
+                    channelMask, format, DEFAULT_AUDIOSINK_BUFFERCOUNT, NULL, NULL, flags)) {
+            LOG_ERROR("Failed to open AudioOutput device.\n");
+            return OMX_ErrorHardware;
+        }
+        
+    }
+    
+#else
     if (bOpened == OMX_TRUE) {
         mAudioSink->stop();
         mAudioSink->close();
@@ -210,26 +259,11 @@ OMX_ERRORTYPE AndroidAudioRender::SetDevice()
         nWrited = 0;
     }
 
-#ifdef JB
-    audio_output_flags_t flags = AUDIO_OUTPUT_FLAG_NONE;
-    if(audioType == OMX_AUDIO_CodingIEC937) {
-        flags = AUDIO_OUTPUT_FLAG_DIRECT;
-        format = AUDIO_FORMAT_PCM_16_BIT;
-    }
-    if(NO_ERROR != mAudioSink->open(nSamplingRate, nChannelsOut, \
-                channelMask, format, DEFAULT_AUDIOSINK_BUFFERCOUNT, NULL, NULL, flags)) {
-        LOG_ERROR("Failed to open AudioOutput device.\n");
-        return OMX_ErrorHardware;
-    }
-#else
     if(NO_ERROR != mAudioSink->open(nSamplingRate, nChannelsOut, \
                 format, DEFAULT_AUDIOSINK_BUFFERCOUNT)) {
         LOG_ERROR("Failed to open AudioOutput device.\n");
         return OMX_ErrorHardware;
     }
-#endif
-    bOpened = OMX_TRUE;
-
     LOG_DEBUG("buffersize: %d, frameSize: %d, frameCount: %d\n", 
             mAudioSink->bufferSize(), mAudioSink->frameSize(), mAudioSink->frameCount());
 
@@ -237,6 +271,10 @@ OMX_ERRORTYPE AndroidAudioRender::SetDevice()
                   * PcmMode.nBitPerSample / nChannelsOut / nBitPerSampleOut;
     nSampleSize = mAudioSink->frameSize() * PcmMode.nChannels \
                   * PcmMode.nBitPerSample / nChannelsOut / nBitPerSampleOut;
+    
+    bOpened == OMX_TRUE;
+#endif
+
     nPeriodSize = nBufferSize/nSampleSize/DEFAULT_AUDIOSINK_BUFFERCOUNT;
 
     if(audioType == OMX_AUDIO_CodingIEC937)
@@ -402,6 +440,32 @@ OMX_ERRORTYPE AndroidAudioRender::AudioRenderDoPause2Exec()
     if(mAudioSink == NULL)
         return OMX_ErrorBadParameter;
     LOG_DEBUG("AndroidAudioRender::AudioRenderDoPause2Exec");
+
+#ifdef JB
+
+    OMX_U32 nSamplingRate;
+
+    if (bOpened == OMX_FALSE) {
+        // Need get from decoder.
+        OMX_U32 channelMask = 0;
+        GetChannelMask(&channelMask);
+
+        LOG_DEBUG("Pause2Exec: SampleRate: %d, Channels: %d, nClockScale %x\n", 
+                PcmMode.nSamplingRate, nChannelsOut, nClockScale);
+
+        nSamplingRate = (OMX_U64)PcmMode.nSamplingRate * nClockScale / Q16_SHIFT;
+
+        audio_output_flags_t flags = (audioType == OMX_AUDIO_CodingIEC937) ? AUDIO_OUTPUT_FLAG_DIRECT : AUDIO_OUTPUT_FLAG_NONE;
+
+        if(NO_ERROR != mAudioSink->open(nSamplingRate, nChannelsOut, \
+                    channelMask, format, DEFAULT_AUDIOSINK_BUFFERCOUNT, NULL, NULL, flags)) {
+            LOG_ERROR("Failed to open AudioOutput device.\n");
+            return OMX_ErrorHardware;
+        }
+        bOpened = OMX_TRUE;
+    }
+#endif
+    
     mAudioSink->start();
     return OMX_ErrorNone;
 }

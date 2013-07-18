@@ -454,6 +454,12 @@ typedef struct {
     OMX_U32 nFlags;
 }OMX_SUBTITLE_SAMPLE;
 
+typedef struct {
+    OMX_U32 nSize;
+    OMX_VERSIONTYPE nVersion;
+    OMX_BOOL bEnableSPSToIDR; /*Add SPS/PPS into every IDR frame*/
+} OMX_PARAM_PREPEND_SPSPPS_TO_IDR;
+
 #endif
 
 /* File EOF */
